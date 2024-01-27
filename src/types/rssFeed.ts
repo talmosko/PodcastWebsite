@@ -8,27 +8,25 @@ const Guid = z.union([
   z.string(),
 ]);
 
-const Enclosure = z.union([
-  z.object({
-    "@_url": z.string(),
-    "@_length": z.string(),
-    "@_type": z.string(),
-  }),
-  z.string(),
-]);
+const Enclosure = z.object({
+  "@_url": z.string(),
+  "@_length": z.string(),
+  "@_type": z.string(),
+});
 
-const ItunesImage = z.union([
-  z.object({
+const ItunesImage = z
+  .object({
     "@_href": z.string(),
-  }),
-  z.string(),
-]);
+  })
+  .optional();
+
+const ItunesCategorySingle = z.object({
+  "@_text": z.string().optional(),
+});
 
 const ItunesCategory = z.union([
-  z.object({
-    "@_text": z.string(),
-  }),
-  z.string(),
+  z.array(ItunesCategorySingle),
+  ItunesCategorySingle,
 ]);
 
 const ItunesOwner = z.object({
@@ -36,14 +34,13 @@ const ItunesOwner = z.object({
   "itunes:email": z.string(),
 });
 
-const AtomLink = z.union([
-  z.object({
-    "@_href": z.string(),
-    "@_rel": z.string(),
-    "@_type": z.optional(z.string()),
-  }),
-  z.string(),
-]);
+const AtomLinkSingle = z.object({
+  "@_href": z.string(),
+  "@_rel": z.string(),
+  "@_type": z.optional(z.string()),
+});
+
+const AtomLink = z.union([z.array(AtomLinkSingle), AtomLinkSingle]);
 
 const Image = z.object({
   url: z.string(),
@@ -54,16 +51,19 @@ const Image = z.object({
 const Item = z.object({
   title: z.string(),
   description: z.string(),
-  link: z.string(),
+  link: z.string().optional(),
   guid: Guid,
-  "dc:creator": z.string(),
+  "dc:creator": z.string().optional(),
   pubDate: z.string(),
   enclosure: Enclosure,
-  "itunes:summary": z.string(),
-  "itunes:explicit": z.string(),
-  "itunes:duration": z.string(),
+  "itunes:summary": z.string().optional(),
+  "itunes:explicit": z.union([z.string(), z.boolean()]),
+  "itunes:duration": z.union([
+    z.string(),
+    z.number().transform((n) => n.toString()),
+  ]),
   "itunes:image": ItunesImage,
-  "itunes:episodeType": z.string(),
+  "itunes:episodeType": z.string().optional(),
   "itunes:season": z
     .union([z.string(), z.number().transform((n) => n.toString())])
     .optional(),
@@ -77,17 +77,17 @@ const Channel = z.object({
   description: z.string(),
   link: z.string(),
   image: Image,
-  generator: z.string(),
-  lastBuildDate: z.string(),
-  "atom:link": z.array(AtomLink),
-  author: z.string(),
+  generator: z.string().optional(),
+  lastBuildDate: z.string().optional(),
+  "atom:link": AtomLink,
+  author: z.string().optional(),
   copyright: z.string(),
   language: z.string(),
   "itunes:author": z.string(),
-  "itunes:summary": z.string(),
+  "itunes:summary": z.string().optional(),
   "itunes:type": z.string(),
   "itunes:owner": ItunesOwner,
-  "itunes:explicit": z.string(),
+  "itunes:explicit": z.union([z.string(), z.boolean()]),
   "itunes:category": ItunesCategory,
   "itunes:image": ItunesImage,
   item: z.array(Item),

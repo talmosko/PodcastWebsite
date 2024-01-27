@@ -4,13 +4,15 @@ import { XMLParser } from "fast-xml-parser";
 import { PodcastRSSFeed } from "~/types/rssFeed";
 
 export const useRssParser = routeLoader$(async ({ error }) => {
-  const res = await fetch("https://anchor.fm/s/f01f6814/podcast/rss");
+  const res = await fetch("https://feeds.buzzsprout.com/1887121.rss");
   if (!res.ok) {
     throw error(404, "Page not found");
   }
 
   const xml = await res.text();
-  const parser = new XMLParser();
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+  });
   const json = parser.parse(xml);
   try {
     const rssFeed = PodcastRSSFeed.parse(json);
@@ -37,6 +39,17 @@ export default component$(() => {
         width={500}
         height={500}
       />
+      {rssFeed.value.rss.channel.item.map((item) => {
+        return (
+          <div key={item.guid.toString()}>
+            <div>{item.title}</div>
+            <div dangerouslySetInnerHTML={item.description}></div>
+            <div>{item.link}</div>
+            <div>{item["itunes:image"] && item["itunes:image"]["@_href"]}</div>
+            <div>{item.enclosure["@_url"]}</div>
+          </div>
+        );
+      })}
     </>
   );
 });
