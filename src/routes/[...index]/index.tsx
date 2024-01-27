@@ -1,61 +1,49 @@
 import { component$ } from "@builder.io/qwik";
 import { type DocumentHead, routeLoader$ } from "@builder.io/qwik-city";
-import {
-  getContent,
-  RenderContent,
-  getBuilderSearchParams,
-} from "@builder.io/sdk-qwik";
-import { CUSTOM_COMPONENTS } from "../../components/builder-registry";
+import { XMLParser } from "fast-xml-parser";
+import { PodcastRSSFeed } from "~/types/rssFeed";
 
-// This page is a catch-all for all routes that don't have a pre-defined route.
-// Using a catch-all route allows you to dynamically create new pages in Builder.
-
-// Use the `useBuilderContent` route loader to get your content from Builder.
-// `routeLoader$()` takes an async function to fetch content
-// from Builder with using `getContent()`.
-export const useBuilderContent = routeLoader$(async ({ url, error }) => {
-  const isPreviewing = url.searchParams.has("builder.preview");
-
-  // Fetch Builder.io Visual CMS content using the Qwik SDK.
-  // The public API key is set in the .env file at the root
-  // https://www.builder.io/c/docs/using-your-api-key
-  const builderContent = await getContent({
-    model: "page",
-    apiKey: import.meta.env.PUBLIC_BUILDER_API_KEY,
-    options: getBuilderSearchParams(url.searchParams),
-    userAttributes: {
-      urlPath: url.pathname,
-    },
-  });
-
-  // If there's no content, throw a 404.
-  // You can use your own 404 component here
-  if (!builderContent && !isPreviewing) {
+export const useRssParser = routeLoader$(async ({ error }) => {
+  const res = await fetch("https://anchor.fm/s/f01f6814/podcast/rss");
+  if (!res.ok) {
     throw error(404, "Page not found");
   }
 
-  // return content fetched from Builder, which is JSON
-  return builderContent;
+  const xml = await res.text();
+  const parser = new XMLParser();
+  const json = parser.parse(xml);
+  try {
+    const rssFeed = PodcastRSSFeed.parse(json);
+    return rssFeed;
+  } catch (e) {
+    console.log(JSON.stringify(e, null, 2));
+    throw error(404, "Page not found");
+  }
 });
 
 export default component$(() => {
-  const builderContent = useBuilderContent();
+  const rssFeed = useRssParser();
 
   // RenderContent component uses the `content` prop to render
   // the page, specified by the API Key, at the current URL path.
   return (
-    <RenderContent
-      model="page"
-      content={builderContent.value}
-      apiKey={import.meta.env.PUBLIC_BUILDER_API_KEY}
-      customComponents={CUSTOM_COMPONENTS}
-    />
+    <>
+      <div>{rssFeed.value.rss.channel.title}</div>
+      <div>{rssFeed.value.rss.channel.description}</div>
+      <div>{rssFeed.value.rss.channel.link}</div>
+      <img
+        src={rssFeed.value.rss.channel.image.url}
+        alt={rssFeed.value.rss.channel.image.title}
+        width={500}
+        height={500}
+      />
+    </>
   );
 });
 
 export const head: DocumentHead = ({ resolveValue }) => {
-  const builderContent = resolveValue(useBuilderContent);
+  const rssFeed = resolveValue(useRssParser);
   return {
-    title: builderContent?.data?.title,
+    title: rssFeed.rss.channel.title,
   };
 };
