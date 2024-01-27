@@ -48,6 +48,7 @@
     "vite-tsconfig-paths": "^4.2.1"
   },
   "dependencies": {
-    "fast-xml-parser": "^4.3.3"
+    "fast-xml-parser": "^4.3.3",
+    "zod": "^3.22.4"
   }
 }
