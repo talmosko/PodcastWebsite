@@ -2,7 +2,7 @@ import { component$ } from "@builder.io/qwik";
 import { type DocumentHead, routeLoader$ } from "@builder.io/qwik-city";
 import { XMLParser } from "fast-xml-parser";
 import { PodcastRSSFeed } from "~/types/rssFeed";
-
+import QwikPlayer from "~/integrations/react/audioPlayer";
 export const useRssParser = routeLoader$(async ({ error }) => {
   const res = await fetch("https://feeds.buzzsprout.com/1887121.rss");
   if (!res.ok) {
@@ -46,7 +46,7 @@ export default component$(() => {
             <div dangerouslySetInnerHTML={item.description}></div>
             <div>{item.link}</div>
             <div>{item["itunes:image"] && item["itunes:image"]["@_href"]}</div>
-            <div>{item.enclosure["@_url"]}</div>
+            <QwikPlayer src={item.enclosure["@_url"]} client:idle />
           </div>
         );
       })}
